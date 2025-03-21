@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  warehouse_db:
+    image: postgres:13
+    container_name: traffic_dwh
+    environment:
+      - POSTGRES_DB=traffic_dwh
+      - POSTGRES_USER=dwh_user
+      - POSTGRES_PASSWORD=dwh_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - warehouse_db
+
+  etl_service:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: traffic_etl
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+    depends_on:
+      - warehouse_db
+
+volumes:
+  postgres_data: 
