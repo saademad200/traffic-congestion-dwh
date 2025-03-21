@@ -175,7 +175,3 @@ The data warehouse design is documented in the following files:
 3. Commit your changes: `git commit -am 'Add feature'`
 4. Push to the branch: `git push origin feature-name`
 5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
