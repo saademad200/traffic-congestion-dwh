@@ -1,0 +1,28 @@
+# Database dependencies
+sqlalchemy==1.4.46
+asyncpg==0.27.0
+
+# Data processing
+pandas==1.5.3
+numpy==1.24.3
+
+# HTTP/API (for potential data sources)
+aiohttp==3.8.4
+
+# Configuration
+pyyaml==6.0
+
+# Visualization (for EDA and reporting)
+matplotlib==3.7.1
+seaborn==0.12.2
+plotly==5.14.1
+
+# Testing
+pytest==7.3.1
+pytest-asyncio==0.21.0
+
+# Logging
+structlog==23.1.0
+
+# Utility
+python-dateutil==2.8.2 
