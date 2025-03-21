@@ -15,41 +15,6 @@ This project implements a data warehouse for urban traffic flow analysis with a 
 - **Comprehensive testing suite**
 - **Advanced analytical queries** for traffic insights
 
-## Directory Structure
-traffic-congestion-dwh/
-├── src/ # Source code for ETL pipeline
-│ ├── config/ # Configuration settings
-│ ├── extractors/ # Data extraction components
-│ ├── transformers/ # Data transformation logic
-│ ├── loaders/ # Database loading components
-│ ├── models/ # Data models and schemas
-│ ├── utils/ # Utility functions
-│ ├── monitoring/ # Monitoring and alerting
-│ └── pipeline/ # Pipeline orchestration
-├── tests/ # Test suite
-│ ├── data/ # Test data files
-│ ├── test_extractors.py
-│ ├── test_transformers.py
-│ ├── test_etl_pipeline.py
-│ ├── test_integration.py
-│ └── test_data_quality.py
-├── queries/ # Analytical SQL queries
-│ ├── 01_basic_aggregation.sql
-│ ├── 02_time_series_analysis.sql
-│ └── ...
-├── eda/ # Exploratory Data Analysis
-│ └── traffic_analysis.ipynb
-├── Design/ # Design documentation
-│ ├── DWH.Design.Template.xlsx
-│ ├── Traffic.Flow.pdf
-│ └── Traffic.xlsx
-├── .github/workflows/  # GitHub Actions CI config
-│ └── main.yml
-├── requirements.txt # Python dependencies
-├── Dockerfile # Container definition
-├── docker-compose.yml # Container orchestration
-└── README.md # Project documentation
-
 ## Data Warehouse Schema
 
 This data warehouse follows a star schema design with:
