@@ -1,17 +1,18 @@
-version: '3.8'
 services:
   warehouse_db:
     image: postgres:13
     container_name: traffic_dwh
     environment:
-      - POSTGRES_DB=traffic_dwh
-      - POSTGRES_USER=dwh_user
-      - POSTGRES_PASSWORD=dwh_password
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - traffic-net
 
   pgadmin:
     image: dpage/pgadmin4
@@ -23,17 +24,47 @@ services:
       - "5050:80"
     depends_on:
       - warehouse_db
+    networks:
+      - traffic-net
 
   etl_service:
     build: 
       context: .
       dockerfile: Dockerfile
     container_name: traffic_etl
+    env_file:
+      - .env
     volumes:
       - ./src:/app/src
       - ./data:/app/data
+      - ./output:/app/output
+      - ./logs:/app/logs
     depends_on:
       - warehouse_db
+    networks:
+      - traffic-net
+
+  jupyter:
+    image: jupyter/scipy-notebook
+    container_name: traffic_analysis
+    user: root
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./output:/home/jovyan/output
+      - ./requirements.txt:/home/jovyan/requirements.txt
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    networks:
+      - traffic-net
+    command: >
+      bash -c "apt-get update && apt-get install -y gcc python3-dev libpq-dev &&
+               pip install -r /home/jovyan/requirements.txt &&
+               start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''"
+
+networks:
+  traffic-net:
 
 volumes:
   postgres_data: 
