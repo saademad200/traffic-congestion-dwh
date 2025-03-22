@@ -38,33 +38,32 @@ The grain will be "Traffic events and measurements at a specific location, on a 
    - Average Speed Excess
    - Violation Hotspot Index by location
 
-## SELECTED OLTP TABLES (8 TOTAL)
+## SELECTED OLTP TABLES (7 TOTAL)
 1. TrafficFlow - PRIMARY - Essential for flow analysis
 2. Accidents - PRIMARY - Critical for safety analysis
 3. CongestionLevels - PRIMARY - Key for bottleneck identification
 4. Vehicles - PRIMARY - Basic vehicle information
-5. RoadConditions - PRIMARY - Road surface impacts
-6. WeatherData - SECONDARY - Environmental context
-7. SpeedViolations - SECONDARY - Safety enforcement
-8. RoadClosures - SECONDARY - Major disruptions
+5. WeatherData - SECONDARY - Environmental context
+6. SpeedViolations - SECONDARY - Safety enforcement
+7. RoadClosures - SECONDARY - Major disruptions
 
 ## SINGLE FACT TABLE DESIGN
 
-### FACT_TrafficEvents
-- EventID (surrogate key)
-- DateKey (FK to DIM_Date)
-- TimeKey (FK to DIM_Time)
-- LocationKey (FK to DIM_Location)
-- VehicleKey (FK to DIM_Vehicle, when applicable)
-- EventTypeKey (FK to DIM_EventType)
-- EnvironmentalKey (FK to DIM_Environmental)
-- VehicleCount (Fully Additive)
-- AvgSpeed (Non-Additive)
-- VehiclesInvolved (Fully Additive)
-- IncidentSeverityScore (Non-Additive)
-- SpeedExcess (Fully Additive)
-- DurationMinutes (Semi-Additive)
-- CongestionLevelScore (Non-Additive)
+  ### FACT_TrafficEvents
+  - EventID (surrogate key)
+  - DateKey (FK to DIM_Date)
+  - TimeKey (FK to DIM_Time)
+  - LocationKey (FK to DIM_Location)
+  - VehicleKey (FK to DIM_Vehicle, when applicable)
+  - EventTypeKey (FK to DIM_EventType)
+  - EnvironmentalKey (FK to DIM_Environmental)
+  - VehicleCount (Fully Additive)
+  - AvgSpeed (Non-Additive)
+  - VehiclesInvolved (Fully Additive)
+  - IncidentSeverityScore (Non-Additive)
+  - SpeedExcess (Fully Additive)
+  - DurationMinutes (Semi-Additive)
+  - CongestionLevelScore (Non-Additive)
 
 ## DIMENSIONS
 
@@ -110,9 +109,6 @@ DIM_Environmental:
 - EnvironmentalKey (surrogate key)
 - Temperature_C
 - WeatherCondition
-- RoadSurface
-- Visibility
-- VisibilityCategory
 
 ## DIMENSION MANAGEMENT APPROACH
 
@@ -147,7 +143,6 @@ TrafficFlow | Fact | FACT_TrafficEvents | FlowID, Location, VehicleCount, Timest
 Accidents | Fact | FACT_TrafficEvents | AccidentID, Location, Severity, VehiclesInvolved, ReportedAt | DateKey, TimeKey, EventTypeKey, LocationKey, LocationName, LocationSource="Accidents", VehiclesInvolved, IncidentSeverityScore | Mixed | Critical safety information
 CongestionLevels | Fact | FACT_TrafficEvents | CongestionID, Location, Level, RecordedAt | DateKey, TimeKey, EventTypeKey, LocationKey, LocationName, LocationSource="CongestionLevels", CongestionLevelScore | Non-Additive | Key congestion data
 Vehicles | Dimension | DIM_Vehicle | VehicleID, VehicleType | VehicleKey, VehicleID, VehicleType, VehicleCategory | N/A | Basic vehicle information
-RoadConditions | Dimension | DIM_Environmental | ConditionID, Surface, Visibility, RecordedAt | EnvironmentalKey, RoadSurface, Visibility | N/A | Road condition factors
 WeatherData | Dimension | DIM_Environmental | WeatherID, Temperature_C, Condition | EnvironmentalKey, Temperature_C, WeatherCondition | N/A | Weather factors
 SpeedViolations | Fact | FACT_TrafficEvents | ViolationID, VehicleID, SpeedRecorded, SpeedLimit | VehicleKey, DateKey, TimeKey, EventTypeKey, LocationKey, LocationName, LocationSource="SpeedViolations", AvgSpeed, SpeedExcess | Mixed | Safety enforcement data
 RoadClosures | Fact | FACT_TrafficEvents | ClosureID, Location, Reason, ClosedAt | DateKey, TimeKey, EventTypeKey, LocationKey, LocationName, LocationSource="RoadClosures", DurationMinutes | Semi-Additive | Major disruption events

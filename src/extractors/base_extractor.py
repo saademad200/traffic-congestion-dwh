@@ -1,21 +1,17 @@
+import pandas as pd
+from typing import Dict, Any
 import logging
-from abc import ABC, abstractmethod
-from typing import Any, Dict
 
-class BaseExtractor(ABC):
-    """Base class for all data extractors"""
+logger = logging.getLogger(__name__)
+
+
+class BaseExtractor:
+    """Base class for data extractors"""
     
-    def __init__(self):
-        self.logger = logging.getLogger(self.__class__.__name__)
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        self.source_file = config['source']['source_file']
     
-    @abstractmethod
-    async def extract(self) -> Dict[str, Any]:
+    def extract(self) -> pd.DataFrame:
         """Extract data from source"""
-        pass
-    
-    def validate_extraction(self, data: Dict[str, Any]) -> bool:
-        """Validate extracted data"""
-        if data is None:
-            self.logger.error("Extracted data is None")
-            return False
-        return True 
+        raise NotImplementedError("Subclasses must implement extract method")

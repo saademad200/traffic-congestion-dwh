@@ -1,132 +1,95 @@
-import asyncio
+import pandas as pd
 import logging
-from datetime import datetime
 import os
+import sys
+from typing import Dict, Any
+from datetime import datetime
 
-# Import configuration directly
-from src.config.config import CONFIG
+# Import config module
+from config.config import CONFIG
 
-from src.extractors.excel_extractor import ExcelExtractor
+# Import extractors and transformers
+from extractors import TrafficDataExtractor
+from transformers.dimension import (
+    LocationDimensionTransformer,
+    DateDimensionTransformer,
+    TimeDimensionTransformer,
+    VehicleDimensionTransformer,
+    EventTypeDimensionTransformer,
+    EnvironmentalDimensionTransformer
+)
+from transformers import FactTableTransformer
 
-from src.transformers.traffic_transformer import TrafficTransformer
-from src.transformers.weather_transformer import WeatherTransformer
-from src.transformers.location_transformer import LocationTransformer
-from src.transformers.event_transformer import EventTransformer
-from src.transformers.vehicle_transformer import VehicleTransformer
-from src.transformers.infrastructure_transformer import InfrastructureTransformer
+# Import loaders
+from loaders.warehouse_loader import WarehouseLoader
 
-from src.loaders.database_loader import DatabaseLoader
+# Configure logging
+log_level = getattr(logging, CONFIG['processing']['log_level'])
+logging.basicConfig(
+    level=log_level,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('/app/logs/traffic_etl.log'),
+        logging.StreamHandler()
+    ]
+)
 
-
-def setup_logging():
-    """Setup logging configuration based on config"""
-    log_config = CONFIG['logging']
-    
-    handlers = []
-    if log_config['log_to_file']:
-        handlers.append(logging.FileHandler(log_config['log_file']))
-    handlers.append(logging.StreamHandler())
-    
-    logging.basicConfig(
-        level=getattr(logging, log_config['level']),
-        format=log_config['format'],
-        handlers=handlers
-    )
+logger = logging.getLogger(__name__)
 
 
-async def run_etl_pipeline():
-    """Run the ETL pipeline"""
-    logger = logging.getLogger("ETLPipeline")
-    logger.info("Starting ETL pipeline")
-    
+def main():
+    """Main ETL process"""
     start_time = datetime.now()
+    logger.info("Starting Traffic Flow ETL process")
     
     try:
-        # 1. Extract data from Excel
-        logger.info("Starting extraction phase")
+        # Use configuration from config.py
+        config = CONFIG
         
-        excel_extractor = ExcelExtractor(CONFIG['excel'])
-        extracted_data = await excel_extractor.extract()
+        # 1. EXTRACT
+        logger.info("Starting data extraction")
+        extractor = TrafficDataExtractor(config)
+        source_data = extractor.extract_all()
+        logger.info(f"Extracted data from {len(source_data)} tables")
         
-        logger.info("Extraction phase completed")
+        # 2. TRANSFORM DIMENSIONS
+        logger.info("Starting dimension transformations")
         
-        # 2. Transform
-        logger.info("Starting transformation phase")
+        # Transform each dimension
+        dimensions = {
+            'DimLocation': LocationDimensionTransformer(config).transform(source_data),
+            'DimDate': DateDimensionTransformer(config).transform(),
+            'DimTime': TimeDimensionTransformer(config).transform(),
+            'DimVehicle': VehicleDimensionTransformer(config).transform(source_data),
+            'DimEventType': EventTypeDimensionTransformer(config).transform(),
+            'DimEnvironmental': EnvironmentalDimensionTransformer(config).transform(source_data)
+        }
         
-        # Transform traffic data
-        traffic_transformer = TrafficTransformer()
-        traffic_transformed = traffic_transformer.transform({
-            'traffic_data': extracted_data.get('traffic_data', [])
-        })
+        # 3. TRANSFORM FACT TABLE
+        logger.info("Starting fact table transformation")
+        fact_transformer = FactTableTransformer(config)
+        fact_traffic_events = fact_transformer.transform(source_data, dimensions)
         
-        # Transform weather data
-        weather_transformer = WeatherTransformer()
-        weather_transformed = weather_transformer.transform({
-            'weather_data': extracted_data.get('weather_data', [])
-        })
+        # 4. LOAD DATA WAREHOUSE
+        logger.info("Starting data warehouse loading")
+        loader = WarehouseLoader(config)
         
-        # Transform location data
-        location_transformer = LocationTransformer()
-        location_transformed = location_transformer.transform({
-            'location_data': extracted_data.get('location_data', [])
-        })
+        # Load dimensions first (in correct order for foreign keys)
+        for dim_name, dim_df in dimensions.items():
+            loader.load_table(dim_name, dim_df)
         
-        # Transform event data
-        event_transformer = EventTransformer()
-        event_transformed = event_transformer.transform({
-            'event_data': extracted_data.get('event_data', [])
-        })
+        # Load fact table
+        loader.load_table('FactTrafficEvents', fact_traffic_events)
         
-        # Transform vehicle data
-        vehicle_transformer = VehicleTransformer()
-        vehicle_transformed = vehicle_transformer.transform({
-            'vehicle_data': extracted_data.get('vehicle_data', [])
-        })
-        
-        # Transform infrastructure data
-        infrastructure_transformer = InfrastructureTransformer()
-        infrastructure_transformed = infrastructure_transformer.transform({
-            'infrastructure_data': extracted_data.get('infrastructure_data', [])
-        })
-        
-        logger.info("Transformation phase completed")
-        
-        # 3. Load
-        logger.info("Starting loading phase")
-        
-        # Initialize database loader
-        db_loader = DatabaseLoader(CONFIG['database'])
-        
-        # Load dimensions first
-        location_keys = await db_loader.load_locations(location_transformed['location_records'])
-        time_keys = await db_loader.load_time_records(traffic_transformed['time_records'])
-        weather_keys = await db_loader.load_weather_records(weather_transformed['weather_records'])
-        event_keys = await db_loader.load_events(event_transformed['event_records'])
-        vehicle_keys = await db_loader.load_vehicles(vehicle_transformed['vehicle_records'])
-        infrastructure_keys = await db_loader.load_infrastructure(infrastructure_transformed['infrastructure_records'])
-        
-        # Load facts
-        await db_loader.load_traffic_measurements(
-            traffic_transformed['traffic_measurements'],
-            location_keys,
-            time_keys,
-            weather_keys,
-            event_keys,
-            vehicle_keys,
-            infrastructure_keys
-        )
-        
-        logger.info("Loading phase completed")
-        
+        # Log completion
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
-        logger.info(f"ETL pipeline completed successfully in {duration:.2f} seconds")
+        logger.info(f"ETL process completed successfully in {duration:.2f} seconds")
         
     except Exception as e:
-        logger.error(f"ETL pipeline failed: {str(e)}")
+        logger.error(f"ETL process failed: {str(e)}", exc_info=True)
         raise
 
 
 if __name__ == "__main__":
-    setup_logging()
-    asyncio.run(run_etl_pipeline()) 
+    main() 

@@ -1,158 +1,76 @@
 -- Dimension Tables
-CREATE TABLE dim_location (
+CREATE TABLE "DimLocation" (
     location_key SERIAL PRIMARY KEY,
-    intersection_id VARCHAR(50) NOT NULL,
-    street_name VARCHAR(100),
-    latitude DECIMAL(9,6),
-    longitude DECIMAL(9,6),
-    district VARCHAR(50),
-    road_type VARCHAR(50),
-    lanes INTEGER,
-    speed_limit INTEGER,
-    valid_from TIMESTAMP NOT NULL,
-    valid_to TIMESTAMP,
-    is_current BOOLEAN DEFAULT TRUE
+    location_name VARCHAR(100) NOT NULL,
+    location_source VARCHAR(50) NOT NULL  -- Source table name
 );
 
-CREATE TABLE dim_time (
-    time_key SERIAL PRIMARY KEY,
-    timestamp TIMESTAMP NOT NULL,
-    hour INTEGER,
-    day INTEGER,
-    day_of_week INTEGER,
-    month INTEGER,
-    quarter INTEGER,
-    year INTEGER,
-    is_holiday BOOLEAN
+CREATE TABLE "DimDate" (
+    date_key INTEGER PRIMARY KEY, -- YYYYMMDD format
+    date DATE NOT NULL,
+    day INTEGER NOT NULL,
+    day_of_week INTEGER NOT NULL,
+    month INTEGER NOT NULL,
+    quarter INTEGER NOT NULL,
+    year INTEGER NOT NULL,
+    is_weekend BOOLEAN NOT NULL,
+    is_holiday BOOLEAN NOT NULL,
+    season VARCHAR(10) NOT NULL
 );
 
-CREATE TABLE dim_weather (
-    weather_key SERIAL PRIMARY KEY,
-    condition VARCHAR(50),
-    temperature DECIMAL(4,1),
-    precipitation DECIMAL(4,2),
-    visibility DECIMAL(5,2),
-    wind_speed DECIMAL(4,1),
-    valid_from TIMESTAMP NOT NULL,
-    valid_to TIMESTAMP,
-    is_current BOOLEAN DEFAULT TRUE
+CREATE TABLE "DimTime" (
+    time_key INTEGER PRIMARY KEY, -- HHMM format
+    time_of_day TIME NOT NULL,
+    hour INTEGER NOT NULL,
+    minute INTEGER NOT NULL,
+    peak_hour_flag BOOLEAN NOT NULL,
+    day_segment VARCHAR(20) NOT NULL -- Morning, Afternoon, Evening, Night
 );
 
--- Add missing dimension tables
-CREATE TABLE dim_event (
-    event_key SERIAL PRIMARY KEY,
-    event_type VARCHAR(50) NOT NULL,
-    event_location VARCHAR(100),
-    event_size INTEGER,
-    start_time TIMESTAMP NOT NULL,
-    end_time TIMESTAMP,
-    impact_radius DECIMAL(5,2),
-    valid_from TIMESTAMP NOT NULL,
-    valid_to TIMESTAMP,
-    is_current BOOLEAN DEFAULT TRUE
-);
-
-CREATE TABLE dim_vehicle (
+CREATE TABLE "DimVehicle" (
     vehicle_key SERIAL PRIMARY KEY,
+    vehicle_id INTEGER NOT NULL, -- Natural key
     vehicle_type VARCHAR(50) NOT NULL,
-    vehicle_class VARCHAR(50) NOT NULL,
-    size_category VARCHAR(20),
-    passenger_capacity INTEGER,
-    valid_from TIMESTAMP NOT NULL,
-    valid_to TIMESTAMP,
-    is_current BOOLEAN DEFAULT TRUE
+    vehicle_category VARCHAR(50) NOT NULL -- Derived from vehicle_type
 );
 
-CREATE TABLE dim_infrastructure (
-    infrastructure_key SERIAL PRIMARY KEY,
-    signal_type VARCHAR(50) NOT NULL,
-    road_condition VARCHAR(50),
-    construction_status VARCHAR(50),
-    last_maintenance_date TIMESTAMP,
-    capacity INTEGER,
-    special_features TEXT[],
-    valid_from TIMESTAMP NOT NULL,
-    valid_to TIMESTAMP,
-    is_current BOOLEAN DEFAULT TRUE
+CREATE TABLE "DimEventType" (
+    event_type_key SERIAL PRIMARY KEY,
+    event_type_id VARCHAR(20) NOT NULL, -- Natural key
+    event_category VARCHAR(50) NOT NULL, -- Flow, Accident, Violation, Congestion, Closure
+    event_description VARCHAR(100) NOT NULL,
+    severity_scale INTEGER NOT NULL -- Standardized severity scale (1-10)
+);
+
+CREATE TABLE "DimEnvironmental" (
+    environmental_key SERIAL PRIMARY KEY,
+    date DATE NOT NULL,
+    temperature_c DECIMAL(5,2),
+    weather_condition VARCHAR(50)
 );
 
 -- Fact Table
-CREATE TABLE fact_traffic_measurements (
-    measurement_key BIGSERIAL PRIMARY KEY,
-    location_key INTEGER REFERENCES dim_location,
-    time_key INTEGER REFERENCES dim_time,
-    weather_key INTEGER REFERENCES dim_weather,
+CREATE TABLE "FactTrafficEvents" (
+    event_id SERIAL PRIMARY KEY,
+    date_key INTEGER REFERENCES "DimDate"(date_key),
+    time_key INTEGER REFERENCES "DimTime"(time_key),
+    location_key INTEGER REFERENCES "DimLocation"(location_key),
+    vehicle_key INTEGER REFERENCES "DimVehicle"(vehicle_key),
+    event_type_key INTEGER REFERENCES "DimEventType"(event_type_key),
+    environmental_key INTEGER REFERENCES "DimEnvironmental"(environmental_key),
+    -- Measures
     vehicle_count INTEGER,
     avg_speed DECIMAL(5,2),
-    occupancy_rate DECIMAL(5,2),
-    queue_length INTEGER,
-    travel_time DECIMAL(6,2),
-    measurement_timestamp TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    delay_time DECIMAL(6,2),
-    congestion_index DECIMAL(5,2),
-    signal_cycle_time INTEGER,
-    incident_count INTEGER,
-    throughput_rate DECIMAL(8,2),
-    event_key INTEGER REFERENCES dim_event,
-    vehicle_key INTEGER REFERENCES dim_vehicle,
-    infrastructure_key INTEGER REFERENCES dim_infrastructure
-) PARTITION BY RANGE (measurement_timestamp);
-
--- Create partitions by month
-CREATE TABLE fact_traffic_measurements_y2024m01 PARTITION OF fact_traffic_measurements
-    FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
-
--- Add indexes
-CREATE INDEX idx_location_current ON dim_location(is_current);
-CREATE INDEX idx_weather_current ON dim_weather(is_current);
-CREATE INDEX idx_fact_timestamp ON fact_traffic_measurements(measurement_timestamp);
-
--- Ensure fact table has all KPIs
-ALTER TABLE fact_traffic_measurements 
-ADD COLUMN IF NOT EXISTS delay_time DECIMAL(6,2),
-ADD COLUMN IF NOT EXISTS congestion_index DECIMAL(5,2),
-ADD COLUMN IF NOT EXISTS signal_cycle_time INTEGER,
-ADD COLUMN IF NOT EXISTS incident_count INTEGER,
-ADD COLUMN IF NOT EXISTS throughput_rate DECIMAL(8,2),
-ADD COLUMN IF NOT EXISTS event_key INTEGER REFERENCES dim_event,
-ADD COLUMN IF NOT EXISTS vehicle_key INTEGER REFERENCES dim_vehicle,
-ADD COLUMN IF NOT EXISTS infrastructure_key INTEGER REFERENCES dim_infrastructure;
-
--- Create missing dimension tables if they don't exist
-CREATE TABLE IF NOT EXISTS dim_event (
-    event_key SERIAL PRIMARY KEY,
-    event_type VARCHAR(50) NOT NULL,
-    event_location VARCHAR(100) NOT NULL,
-    event_size INTEGER,
-    start_time TIMESTAMP NOT NULL,
-    end_time TIMESTAMP,
-    impact_radius DECIMAL(5,2),
-    valid_from TIMESTAMP NOT NULL,
-    valid_to TIMESTAMP,
-    is_current BOOLEAN DEFAULT TRUE
+    vehicles_involved INTEGER,
+    incident_severity_score DECIMAL(3,1),
+    speed_excess DECIMAL(5,2),
+    duration_minutes INTEGER,
+    congestion_level_score DECIMAL(3,1)
 );
 
-CREATE TABLE IF NOT EXISTS dim_vehicle (
-    vehicle_key SERIAL PRIMARY KEY,
-    vehicle_type VARCHAR(50) NOT NULL,
-    vehicle_class VARCHAR(50) NOT NULL,
-    size_category VARCHAR(20),
-    passenger_capacity INTEGER,
-    valid_from TIMESTAMP NOT NULL,
-    valid_to TIMESTAMP,
-    is_current BOOLEAN DEFAULT TRUE
-);
-
-CREATE TABLE IF NOT EXISTS dim_infrastructure (
-    infrastructure_key SERIAL PRIMARY KEY,
-    signal_type VARCHAR(50) NOT NULL,
-    road_condition VARCHAR(50),
-    construction_status VARCHAR(50),
-    last_maintenance_date TIMESTAMP,
-    capacity INTEGER,
-    special_features TEXT[],
-    valid_from TIMESTAMP NOT NULL,
-    valid_to TIMESTAMP,
-    is_current BOOLEAN DEFAULT TRUE
-); 
+-- Create indexes for better performance
+CREATE INDEX idx_factevents_date ON "FactTrafficEvents"(date_key);
+CREATE INDEX idx_factevents_location ON "FactTrafficEvents"(location_key);
+CREATE INDEX idx_factevents_event_type ON "FactTrafficEvents"(event_type_key);
+CREATE INDEX idx_dimlocation_source ON "DimLocation"(location_source);
+CREATE INDEX idx_dimenv_date ON "DimEnvironmental"(date); 

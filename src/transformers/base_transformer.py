@@ -1,21 +1,16 @@
+import pandas as pd
+from typing import Dict, Any, Optional
 import logging
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List
 
-class BaseTransformer(ABC):
+logger = logging.getLogger(__name__)
+
+class BaseTransformer:
     """Base class for all transformers"""
     
-    def __init__(self):
-        self.logger = logging.getLogger(self.__class__.__name__)
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+        logger.debug(f"Initialized {self.__class__.__name__}")
     
-    @abstractmethod
-    def transform(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Transform extracted data"""
-        pass
-    
-    def validate_transformation(self, data: Dict[str, Any]) -> bool:
-        """Validate transformed data"""
-        if data is None:
-            self.logger.error("Transformed data is None")
-            return False
-        return True 
+    def transform(self, data: Optional[Dict[str, pd.DataFrame]] = None) -> pd.DataFrame:
+        """Transform source data into target format"""
+        raise NotImplementedError("Subclasses must implement transform method") 
