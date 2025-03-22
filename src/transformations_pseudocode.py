@@ -1,477 +1,499 @@
 """
-Pseudocode for transformation functions in the Traffic Flow Data Warehouse
+Pseudocode for Traffic Flow Data Warehouse Transformer Classes
 
-This file provides detailed descriptions of the transformation logic
-used in the ETL pipeline without actual implementation.
+This file provides detailed pseudocode descriptions of the transformation
+logic implemented in the ETL pipeline.
 """
 
 # ======================================================
-# TRAFFIC DATA TRANSFORMATIONS
+# BASE TRANSFORMER
 # ======================================================
 
-def clean_traffic_data(traffic_data):
+class BaseTransformer:
     """
-    FUNCTION: clean_traffic_data
+    CLASS: BaseTransformer
     
     PURPOSE:
-    Clean and standardize raw traffic sensor data to ensure consistent formats
-    and handle missing or invalid values.
+    Abstract base class that defines the common interface for all transformers.
     
-    PSEUDOCODE:
-    1. Convert timestamp strings to datetime objects
-    2. Fill missing vehicle counts with 0
-    3. Fill missing speeds with 0
-    4. Ensure occupancy rate is between 0 and 1
-    5. Drop duplicate entries for the same timestamp
-    6. Handle outliers in speed data (e.g., cap at reasonable max speed)
-    7. Remove records with invalid combinations (e.g., high speed + high occupancy)
+    ATTRIBUTES:
+    - logger: Logger for transformation operations
     
-    OUTPUTS:
-    - Cleaned traffic data DataFrame
+    METHODS:
+    - transform(data): Abstract method to be implemented by subclasses
     """
-    pass
-
-
-def create_traffic_measurements(cleaned_traffic_data):
-    """
-    FUNCTION: create_traffic_measurements
     
-    PURPOSE:
-    Convert cleaned traffic data into structured TrafficMeasurement objects
-    ready for loading into the fact table.
-    
-    PSEUDOCODE:
-    1. Iterate through each row in the cleaned data
-    2. For each row:
-       a. Extract vehicle_count, avg_speed, occupancy_rate
-       b. Convert to appropriate data types
-       c. Calculate derived metrics if not present (e.g., estimate queue length)
-       d. Include additional KPIs if present (delay_time, congestion_index, etc.)
-       e. Create a TrafficMeasurement object
-       f. Add to collection
-    
-    OUTPUTS:
-    - List of TrafficMeasurement objects
-    """
-    pass
-
-
-def create_time_dimension_records(timestamps):
-    """
-    FUNCTION: create_time_dimension_records
-    
-    PURPOSE:
-    Extract unique timestamps from traffic data and create time dimension records
-    with calendar attributes for analysis.
-    
-    PSEUDOCODE:
-    1. Extract unique timestamps from data
-    2. For each timestamp:
-       a. Extract hour, day, day of week, month, quarter, year
-       b. Determine if it's a holiday using a calendar lookup
-       c. Create a TimeRecord object with all attributes
-       d. Add to collection
-    
-    OUTPUTS:
-    - List of TimeRecord objects representing unique time points
-    """
-    pass
-
-
-def is_holiday(date):
-    """
-    FUNCTION: is_holiday
-    
-    PURPOSE:
-    Determine if a given date is a holiday for proper time dimension flagging.
-    
-    PSEUDOCODE:
-    1. Compare date against list of holiday dates
-    2. If match found, return True
-    3. Otherwise, return False
-    
-    OUTPUTS:
-    - Boolean indicating if date is a holiday
-    """
-    pass
+    def transform(self, data):
+        """
+        METHOD: transform
+        
+        PURPOSE:
+        Abstract method that transforms input data into the desired output format.
+        
+        PSEUDOCODE:
+        1. Raise NotImplementedError - must be implemented by subclasses
+        
+        PARAMETERS:
+        - data: Input data to transform
+        
+        OUTPUTS:
+        - Transformed data in the form of a pandas DataFrame
+        """
+        pass
 
 
 # ======================================================
-# WEATHER DATA TRANSFORMATIONS
+# DATE DIMENSION TRANSFORMER
 # ======================================================
 
-def clean_weather_data(weather_data):
+class DateDimensionTransformer(BaseTransformer):
     """
-    FUNCTION: clean_weather_data
+    CLASS: DateDimensionTransformer
     
     PURPOSE:
-    Clean and standardize weather data to ensure consistent formats and
-    handle missing or invalid values.
+    Transforms date range into date dimension records with calendar attributes.
     
-    PSEUDOCODE:
-    1. Convert timestamp strings to datetime objects
-    2. Fill missing numeric values with appropriate defaults
-    3. Standardize weather condition text (map variations to standard terms)
-    4. Handle invalid values (e.g., negative precipitation)
-    5. Interpolate values for missing time periods if needed
-    
-    OUTPUTS:
-    - Cleaned weather data DataFrame
+    METHODS:
+    - transform(data): Creates date dimension covering 5 years (3 past, current, 1 future)
     """
-    pass
-
-
-def create_weather_records(cleaned_weather_data):
-    """
-    FUNCTION: create_weather_records
     
-    PURPOSE:
-    Convert cleaned weather data into structured Weather objects ready for
-    loading into the weather dimension table.
-    
-    PSEUDOCODE:
-    1. Iterate through each row in the cleaned data
-    2. For each row:
-       a. Extract condition, temperature, precipitation, etc.
-       b. Convert to appropriate data types
-       c. Set valid_from timestamp
-       d. Create a Weather object
-       e. Add to collection
-    
-    OUTPUTS:
-    - List of Weather objects
-    """
-    pass
-
-
-def standardize_weather_conditions(condition_text):
-    """
-    FUNCTION: standardize_weather_conditions
-    
-    PURPOSE:
-    Map various weather condition descriptions to a standard set of conditions
-    for consistent analysis.
-    
-    PSEUDOCODE:
-    1. Convert input to lowercase
-    2. Check against mapping dictionary of variations
-    3. Return standardized condition text
-    4. Return "Unknown" if no match found
-    
-    CONDITIONS MAPPING:
-    - Clear, Sunny -> "Clear"
-    - Partly Cloudy, Cloudy, Overcast -> "Cloudy"
-    - Rain, Raining, Drizzle -> "Rain"
-    - Snow, Snowing -> "Snow"
-    - Fog, Foggy, Mist -> "Fog"
-    
-    OUTPUTS:
-    - Standardized weather condition text
-    """
-    pass
+    def transform(self, data=None):
+        """
+        METHOD: transform
+        
+        PURPOSE:
+        Creates date dimension covering 5 years (3 past, current, 1 future).
+        Independent of source data.
+        
+        PSEUDOCODE:
+        1. Determine date range
+           a. today = current date
+           b. start_date = January 1, (today.year - 3)
+           c. end_date = December 31, (today.year + 1)
+        
+        2. Generate all dates in range
+           a. Initialize empty list for dates
+           b. Set current_date = start_date
+           c. While current_date <= end_date:
+              i. Determine if weekend (day of week >= 5)
+              ii. Determine season based on month
+              iii. Determine holiday status
+              iv. Create date record with attributes
+              v. Add record to dates list
+              vi. Increment current_date by 1 day
+        
+        3. Create DataFrame from dates list
+        
+        4. Add surrogate key in YYYYMMDD format
+           a. Apply date formatting function to create integer key
+        
+        5. Return date dimension DataFrame
+        
+        PARAMETERS:
+        - data: Optional, not used as this is a time-based dimension
+        
+        OUTPUTS:
+        - Date dimension DataFrame with calendar attributes
+        """
+        pass
 
 
 # ======================================================
-# LOCATION DATA TRANSFORMATIONS
+# TIME DIMENSION TRANSFORMER
 # ======================================================
 
-def clean_location_data(location_data):
+class TimeDimensionTransformer(BaseTransformer):
     """
-    FUNCTION: clean_location_data
+    CLASS: TimeDimensionTransformer
     
     PURPOSE:
-    Clean and standardize location data to ensure consistent formats and
-    handle missing or invalid values.
+    Transforms time points into time dimension records with minute-level granularity.
     
-    PSEUDOCODE:
-    1. Validate required fields (intersection_id)
-    2. Fill missing string values with "Unknown"
-    3. Fill missing numeric values with appropriate defaults
-    4. Validate geographic coordinates
-    5. Standardize district and road type names
-    
-    OUTPUTS:
-    - Cleaned location data DataFrame
+    METHODS:
+    - transform(data): Creates time dimension with 1440 records (24 hours × 60 minutes)
     """
-    pass
-
-
-def create_location_records(cleaned_location_data):
-    """
-    FUNCTION: create_location_records
     
-    PURPOSE:
-    Convert cleaned location data into structured Location objects ready for
-    loading into the location dimension table.
-    
-    PSEUDOCODE:
-    1. Iterate through each row in the cleaned data
-    2. For each row:
-       a. Extract intersection_id, street_name, coordinates, etc.
-       b. Convert to appropriate data types
-       c. Set SCD fields (valid_from, is_current)
-       d. Create a Location object
-       e. Add to collection
-    
-    OUTPUTS:
-    - List of Location objects
-    """
-    pass
-
-
-def validate_coordinates(latitude, longitude):
-    """
-    FUNCTION: validate_coordinates
-    
-    PURPOSE:
-    Validate that geographic coordinates are within valid ranges and formats.
-    
-    PSEUDOCODE:
-    1. Check if latitude is between -90 and 90
-    2. Check if longitude is between -180 and 180
-    3. Return True if both are valid
-    4. Return False otherwise
-    
-    OUTPUTS:
-    - Boolean indicating if coordinates are valid
-    """
-    pass
+    def transform(self, data=None):
+        """
+        METHOD: transform
+        
+        PURPOSE:
+        Creates time dimension with minute-level granularity (1440 records).
+        Independent of source data.
+        
+        PSEUDOCODE:
+        1. Define peak hours based on traffic patterns
+           a. morning_peak_start = 13
+           b. morning_peak_end = 13
+           c. evening_peak_start = 18 
+           d. evening_peak_end = 19
+        
+        2. Generate all minute combinations
+           a. Initialize empty list for times
+           b. For each hour in range(24):
+              i. For each minute in range(60):
+                 - Create time object
+                 - Determine if peak hour
+                 - Determine day segment (Morning, Afternoon, Evening, Night)
+                 - Create time record with attributes
+                 - Add record to times list
+        
+        3. Create DataFrame from times list
+        
+        4. Add surrogate key in HHMM format
+           a. time_key = hour * 100 + minute
+        
+        5. Return time dimension DataFrame
+        
+        PARAMETERS:
+        - data: Optional, not used as this is a time-based dimension
+        
+        OUTPUTS:
+        - Time dimension DataFrame with 1440 records
+        """
+        pass
 
 
 # ======================================================
-# EVENT DATA TRANSFORMATIONS
+# LOCATION DIMENSION TRANSFORMER
 # ======================================================
 
-def clean_event_data(event_data):
+class LocationDimensionTransformer(BaseTransformer):
     """
-    FUNCTION: clean_event_data
+    CLASS: LocationDimensionTransformer
     
     PURPOSE:
-    Clean and standardize event data to ensure consistent formats and
-    handle missing or invalid values.
+    Transforms location data from multiple source tables into location dimension records.
     
-    PSEUDOCODE:
-    1. Validate required fields (event_type, event_location, start_time)
-    2. Fill missing required fields with default values
-    3. Convert timestamp strings to datetime objects (start_time, end_time)
-    4. If end_time is missing, set it to start_time + 1 hour
-    5. Convert event_size to numeric, filling missing values with 0
-    6. Convert impact_radius to numeric, filling missing values with 0
-    
-    OUTPUTS:
-    - Cleaned event data DataFrame
+    METHODS:
+    - transform(data): Creates location dimension from all tables with location data
     """
-    pass
-
-
-def create_event_records(cleaned_event_data):
-    """
-    FUNCTION: create_event_records
     
-    PURPOSE:
-    Convert cleaned event data into structured Event objects ready for
-    loading into the event dimension table.
-    
-    PSEUDOCODE:
-    1. Iterate through each row in the cleaned data
-    2. For each row:
-       a. Extract event_type, event_location, timestamps, etc.
-       b. Convert numeric fields to appropriate data types
-       c. Create an Event object
-       d. Add to collection
-    
-    OUTPUTS:
-    - List of Event objects
-    """
-    pass
-
-
-# ======================================================
-# VEHICLE DATA TRANSFORMATIONS
-# ======================================================
-
-def clean_vehicle_data(vehicle_data):
-    """
-    FUNCTION: clean_vehicle_data
-    
-    PURPOSE:
-    Clean and standardize vehicle data to ensure consistent formats and
-    handle missing or invalid values.
-    
-    PSEUDOCODE:
-    1. Validate required fields (vehicle_type, vehicle_class)
-    2. Fill missing required fields with "Unknown"
-    3. Fill missing size_category with "Unknown"
-    4. Convert passenger_capacity to numeric, filling missing values with 0
-    5. Standardize vehicle types and classes (lowercase then capitalize)
-    
-    OUTPUTS:
-    - Cleaned vehicle data DataFrame
-    """
-    pass
-
-
-def create_vehicle_records(cleaned_vehicle_data):
-    """
-    FUNCTION: create_vehicle_records
-    
-    PURPOSE:
-    Convert cleaned vehicle data into structured Vehicle objects ready for
-    loading into the vehicle dimension table.
-    
-    PSEUDOCODE:
-    1. Iterate through each row in the cleaned data
-    2. For each row:
-       a. Extract vehicle_type, vehicle_class, size_category, passenger_capacity
-       b. Convert passenger_capacity to integer if present
-       c. Create a Vehicle object
-       d. Add to collection
-    
-    OUTPUTS:
-    - List of Vehicle objects
-    """
-    pass
+    def transform(self, data):
+        """
+        METHOD: transform
+        
+        PURPOSE:
+        Creates location dimension from all source tables with location data.
+        
+        PSEUDOCODE:
+        1. Define tables with location attributes
+           a. location_tables = ['TrafficFlow', 'Accidents', 'CongestionLevels',
+                                'SpeedViolations', 'RoadClosures']
+        
+        2. Collect all locations with their source
+           a. Initialize empty list for locations
+           b. For each table_name in location_tables:
+              i. If table exists in data:
+                 - Extract unique locations
+                 - For each location:
+                   * Create location record with name and source
+                   * Add to locations list
+        
+        3. Create DataFrame from locations list
+        
+        4. Add surrogate key
+           a. If locations exist:
+              i. Add sequential location_key starting from 1
+           b. If no locations:
+              i. Create empty DataFrame with correct columns
+        
+        5. Return location dimension DataFrame
+        
+        PARAMETERS:
+        - data: Dictionary of source DataFrames
+        
+        OUTPUTS:
+        - Location dimension DataFrame
+        """
+        pass
 
 
 # ======================================================
-# INFRASTRUCTURE DATA TRANSFORMATIONS
+# VEHICLE DIMENSION TRANSFORMER
 # ======================================================
 
-def clean_infrastructure_data(infrastructure_data):
+class VehicleDimensionTransformer(BaseTransformer):
     """
-    FUNCTION: clean_infrastructure_data
+    CLASS: VehicleDimensionTransformer
     
     PURPOSE:
-    Clean and standardize infrastructure data to ensure consistent formats and
-    handle missing or invalid values.
+    Transforms vehicle data into vehicle dimension records with categorization.
     
-    PSEUDOCODE:
-    1. Validate required fields (signal_type)
-    2. Fill missing signal_type with "Unknown"
-    3. Fill missing string fields (road_condition, construction_status) with "Unknown"
-    4. Convert last_maintenance_date strings to datetime objects
-    5. Convert capacity to numeric, filling missing values with 0
-    6. Process special_features field:
-       a. If string, split by commas into a list
-       b. If null, convert to empty list
-    
-    OUTPUTS:
-    - Cleaned infrastructure data DataFrame
+    METHODS:
+    - transform(data): Creates vehicle dimension from Vehicles OLTP table
     """
-    pass
-
-
-def create_infrastructure_records(cleaned_infrastructure_data):
-    """
-    FUNCTION: create_infrastructure_records
     
-    PURPOSE:
-    Convert cleaned infrastructure data into structured Infrastructure objects ready for
-    loading into the infrastructure dimension table.
-    
-    PSEUDOCODE:
-    1. Iterate through each row in the cleaned data
-    2. For each row:
-       a. Extract signal_type, road_condition, construction_status, etc.
-       b. Convert capacity to integer if present
-       c. Ensure special_features is a list
-       d. Create an Infrastructure object
-       e. Add to collection
-    
-    OUTPUTS:
-    - List of Infrastructure objects
-    """
-    pass
+    def transform(self, data):
+        """
+        METHOD: transform
+        
+        PURPOSE:
+        Creates vehicle dimension from Vehicles OLTP table with categorization.
+        
+        PSEUDOCODE:
+        1. Validate input data
+           a. If 'Vehicles' not in data:
+              i. Log error and return empty DataFrame
+        
+        2. Extract vehicle data
+           a. Copy Vehicles DataFrame
+        
+        3. Create vehicle category based on vehicle type
+           a. Define mapping dictionary:
+              i. 'Sedan' -> 'Passenger'
+              ii. 'SUV' -> 'Passenger'
+              iii. 'Truck' -> 'Commercial'
+              iv. etc.
+           b. Apply categorization function to VehicleType column
+              i. Use mapping with default 'Other' for unknown types
+        
+        4. Rename columns to match dimension schema
+           a. 'VehicleID' -> 'vehicle_id'
+           b. 'VehicleType' -> 'vehicle_type'
+        
+        5. Add surrogate key
+           a. Add sequential vehicle_key starting from 1
+        
+        6. Select needed columns
+           a. 'vehicle_key', 'vehicle_id', 'vehicle_type', 'vehicle_category'
+        
+        7. Return vehicle dimension DataFrame
+        
+        PARAMETERS:
+        - data: Dictionary of source DataFrames
+        
+        OUTPUTS:
+        - Vehicle dimension DataFrame
+        """
+        pass
 
 
 # ======================================================
-# INTEGRATION TRANSFORMATIONS
+# ENVIRONMENTAL DIMENSION TRANSFORMER
 # ======================================================
 
-def assign_dimension_keys(fact_records, dimension_keys):
+class EnvironmentalDimensionTransformer(BaseTransformer):
     """
-    FUNCTION: assign_dimension_keys
+    CLASS: EnvironmentalDimensionTransformer
     
     PURPOSE:
-    Assign foreign keys from dimension tables to fact records before loading.
+    Transforms weather data into environmental dimension records.
     
-    PSEUDOCODE:
-    1. For each fact record:
-       a. Look up time_key based on timestamp
-       b. Look up location_key based on location reference
-       c. Find nearest weather_key based on timestamp
-       d. Assign event_key if applicable
-       e. Assign vehicle_key if applicable
-       f. Assign infrastructure_key if applicable
-       g. Assign keys to the fact record
-    
-    OUTPUTS:
-    - Fact records with dimension keys assigned
+    METHODS:
+    - transform(data): Creates environmental dimension from WeatherData
     """
-    pass
+    
+    def transform(self, data):
+        """
+        METHOD: transform
+        
+        PURPOSE:
+        Creates environmental dimension from WeatherData only.
+        
+        PSEUDOCODE:
+        1. Initialize empty list for environmental records
+        
+        2. Process Weather Data
+           a. If 'WeatherData' in data:
+              i. Copy WeatherData DataFrame
+              ii. Convert timestamps to date objects
+              iii. Group by date to reduce cardinality
+              iv. Aggregate to get daily averages and most common conditions
+              v. For each day:
+                 - Create record with date, temperature, weather condition
+                 - Add record to env_records list
+        
+        3. Create DataFrame from env_records list
+        
+        4. Add surrogate key
+           a. If records exist:
+              i. Add sequential environmental_key starting from 1
+           b. If no records:
+              i. Create empty DataFrame with correct columns
+        
+        5. Return environmental dimension DataFrame
+        
+        PARAMETERS:
+        - data: Dictionary of source DataFrames
+        
+        OUTPUTS:
+        - Environmental dimension DataFrame
+        """
+        pass
 
 
-def find_nearest_weather_record(timestamp, weather_keys):
+# ======================================================
+# EVENT TYPE DIMENSION TRANSFORMER
+# ======================================================
+
+class EventTypeDimensionTransformer(BaseTransformer):
     """
-    FUNCTION: find_nearest_weather_record
+    CLASS: EventTypeDimensionTransformer
     
     PURPOSE:
-    Find the weather record closest in time to a given traffic measurement.
+    Creates static event type dimension based on data model.
     
-    PSEUDOCODE:
-    1. Initialize minimum difference to a large value
-    2. Initialize nearest key to None
-    3. For each weather timestamp and key:
-       a. Calculate time difference to measurement timestamp
-       b. If difference is smaller than current minimum:
-          i. Update minimum difference
-          ii. Update nearest key
-    4. Return nearest key
-    
-    OUTPUTS:
-    - Weather key for the closest weather record
+    METHODS:
+    - transform(data): Creates static event type dimension
     """
-    pass
+    
+    def transform(self, data=None):
+        """
+        METHOD: transform
+        
+        PURPOSE:
+        Creates EventType dimension as a static dimension based on data model.
+        Independent of source data.
+        
+        PSEUDOCODE:
+        1. Define static event types list
+           a. Add event types with attributes:
+              i. 'FLOW': Regular traffic flow measurement (severity 0)
+              ii. 'ACC_MINOR': Minor accident (severity 3)
+              iii. 'ACC_MODERATE': Moderate accident (severity 6)
+              iv. 'ACC_SEVERE': Severe accident (severity 9)
+              v. 'CONGESTION_LOW': Low congestion (severity 2)
+              vi. etc.
+        
+        2. Create DataFrame from event_types list
+        
+        3. Add surrogate key
+           a. Add sequential event_type_key starting from 1
+        
+        4. Return event type dimension DataFrame
+        
+        PARAMETERS:
+        - data: Optional, not used as this is a static dimension
+        
+        OUTPUTS:
+        - Event type dimension DataFrame
+        """
+        pass
 
 
-def find_related_event(timestamp, location, event_keys):
+# ======================================================
+# FACT TABLE TRANSFORMER
+# ======================================================
+
+class FactTableTransformer(BaseTransformer):
     """
-    FUNCTION: find_related_event
+    CLASS: FactTableTransformer
     
     PURPOSE:
-    Find event that might affect a traffic measurement based on time and location.
+    Transforms source data into fact table records, connecting all dimensions.
     
-    PSEUDOCODE:
-    1. Filter events to those active during the measurement timestamp
-    2. Filter events to those with impact at the measurement location
-    3. If multiple events found, prioritize by:
-       a. Proximity to location
-       b. Event size (larger events have more impact)
-    4. Return most relevant event key or None
-    
-    OUTPUTS:
-    - Event key for the most relevant event, or None if no matching event
+    METHODS:
+    - transform(data, dimensions): Creates fact table records from multiple source tables
+    - Helper methods for dimension key lookups:
+      _get_date_key, _get_time_key, _get_location_key, _get_vehicle_key,
+      _get_event_type_key, _get_environmental_key
+    - Helper methods for normalization:
+      _map_congestion_level, _map_accident_severity
     """
-    pass
-
-
-def calculate_congestion_index(vehicle_count, avg_speed, occupancy_rate):
-    """
-    FUNCTION: calculate_congestion_index
     
-    PURPOSE:
-    Calculate a normalized congestion index based on multiple traffic metrics.
+    def transform(self, data, dimensions):
+        """
+        METHOD: transform
+        
+        PURPOSE:
+        Transforms source data into fact table records, joining with dimension keys.
+        
+        PSEUDOCODE:
+        1. Initialize empty list for fact records and record ID counter
+        
+        2. Get dimension DataFrames from dimensions dictionary
+           a. date_df, time_df, location_df, vehicle_df, event_type_df, env_df
+           b. Validate required dimensions exist
+        
+        3. Process TrafficFlow data
+           a. If 'TrafficFlow' in data:
+              i. For each row:
+                 - Create fact record with:
+                   * Dimension keys (date, time, location, event_type, environmental)
+                   * Measures (vehicle_count)
+                 - Add record to fact_records list
+                 - Increment record_id
+        
+        4. Process Accidents data
+           a. If 'Accidents' in data:
+              i. For each row:
+                 - Create fact record with:
+                   * Dimension keys (date, time, location, event_type, environmental)
+                   * Measures (vehicles_involved, incident_severity_score)
+                 - Add record to fact_records list
+                 - Increment record_id
+        
+        5. Process CongestionLevels data
+           a. If 'CongestionLevels' in data:
+              i. For each row:
+                 - Create fact record with:
+                   * Dimension keys (date, time, location, event_type, environmental)
+                   * Measures (congestion_level_score)
+                 - Add record to fact_records list
+                 - Increment record_id
+        
+        6. Process SpeedViolations data
+           a. If 'SpeedViolations' in data:
+              i. For each row:
+                 - Create fact record with:
+                   * Dimension keys (date, time, location, vehicle, event_type, environmental)
+                   * Measures (avg_speed, speed_excess)
+                 - Add record to fact_records list
+                 - Increment record_id
+        
+        7. Process RoadClosures data
+           a. If 'RoadClosures' in data:
+              i. For each row:
+                 - Create fact record with:
+                   * Dimension keys (date, time, location, event_type, environmental)
+                   * Measures (duration_minutes)
+                 - Add record to fact_records list
+                 - Increment record_id
+        
+        8. Create DataFrame from fact_records list
+        
+        9. Return fact table DataFrame
+        
+        PARAMETERS:
+        - data: Dictionary of source DataFrames
+        - dimensions: Dictionary of dimension DataFrames
+        
+        OUTPUTS:
+        - Fact table DataFrame
+        """
+        pass
     
-    PSEUDOCODE:
-    1. Normalize vehicle count to a 0-1 scale
-    2. Invert normalized avg_speed (lower speeds mean higher congestion)
-    3. Combine normalized metrics with appropriate weights
-       a. Weight for normalized vehicle count: 0.3
-       b. Weight for inverted normalized speed: 0.4
-       c. Weight for occupancy rate: 0.3
-    4. Scale result to a 0-10 range where 10 is maximum congestion
+    def _map_congestion_level(self, level):
+        """
+        METHOD: _map_congestion_level
+        
+        PURPOSE:
+        Map congestion level string to numeric score.
+        
+        PSEUDOCODE:
+        1. Define mapping dictionary:
+           a. 'Low' -> 1.0
+           b. 'Medium' -> 2.0
+           c. 'High' -> 3.0
+           d. 'Severe' -> 4.0
+        2. Return mapped value or default (0.0)
+        """
+        pass
     
-    OUTPUTS:
-    - Congestion index value between 0 and 10
-    """
-    pass 
+    def _map_accident_severity(self, severity):
+        """
+        METHOD: _map_accident_severity
+        
+        PURPOSE:
+        Map accident severity string to numeric score.
+        
+        PSEUDOCODE:
+        1. Define mapping dictionary:
+           a. 'Minor' -> 1.0
+           b. 'Moderate' -> 2.0
+           c. 'Severe' -> 3.0
+           d. 'Fatal' -> 4.0
+        2. Return mapped value or default (0.0)
+        """
+        pass 
