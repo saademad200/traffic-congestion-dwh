@@ -127,23 +127,5 @@ This project uses GitHub Actions for continuous integration, running automated t
 
 The CI pipeline performs:
 - Code linting with flake8
-- Unit tests with pytest
-- Test coverage reporting
 
 To see the CI pipeline results, check the "Actions" tab in the GitHub repository.
-
-## Documentation
-
-The data warehouse design is documented in the following files:
-
-- `docs/DWH.Design.Template.xlsx` - Dimension and fact table specifications
-- `docs/Traffic.Flow.pdf` - Conceptual design and data flow diagrams
-- `docs/traffic_flow_data_warehouse_design.txt` - Additional design documentation
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit your changes: `git commit -am 'Add feature'`
-4. Push to the branch: `git push origin feature-name`
-5. Submit a pull request
