@@ -1,0 +1,200 @@
+Analysis of: ../data/traffic_flow_data.xlsx
+Generated on: 2025-03-22 10:46:25
+==================================================
+
+Excel File Analysis
+==================
+
+Sheet Name: Vehicles
+--------------------
+Number of rows: 200
+
+Columns and Data Types:
+- VehicleID: int64
+- PlateNumber: object
+- VehicleType: object
+- OwnerID: int64
+
+
+Sheet Name: Drivers
+-------------------
+Number of rows: 200
+
+Columns and Data Types:
+- DriverID: int64
+- Name: object
+- Age: int64
+- LicenseNumber: object
+- ExperienceYears: int64
+
+
+Sheet Name: TrafficFlow
+-----------------------
+Number of rows: 150
+
+Columns and Data Types:
+- FlowID: int64
+- Location: object
+- VehicleCount: int64
+- Timestamp: datetime64[ns]
+
+
+Sheet Name: Accidents
+---------------------
+Number of rows: 100
+
+Columns and Data Types:
+- AccidentID: int64
+- Location: object
+- Severity: object
+- VehiclesInvolved: int64
+- ReportedAt: datetime64[ns]
+
+
+Sheet Name: RoadConditions
+--------------------------
+Number of rows: 100
+
+Columns and Data Types:
+- ConditionID: int64
+- Location: object
+- Surface: object
+- Visibility: object
+- RecordedAt: datetime64[ns]
+
+
+Sheet Name: TrafficLights
+-------------------------
+Number of rows: 100
+
+Columns and Data Types:
+- LightID: int64
+- Location: object
+- Status: object
+- LastChanged: datetime64[ns]
+
+
+Sheet Name: Cameras
+-------------------
+Number of rows: 100
+
+Columns and Data Types:
+- CameraID: int64
+- Location: object
+- Status: object
+- LastMaintenance: datetime64[ns]
+
+
+Sheet Name: SpeedViolations
+---------------------------
+Number of rows: 100
+
+Columns and Data Types:
+- ViolationID: int64
+- VehicleID: int64
+- SpeedRecorded: int64
+- SpeedLimit: int64
+- Timestamp: datetime64[ns]
+
+
+Sheet Name: ParkingTickets
+--------------------------
+Number of rows: 100
+
+Columns and Data Types:
+- TicketID: int64
+- VehicleID: int64
+- FineAmount: int64
+- IssuedAt: datetime64[ns]
+
+
+Sheet Name: PublicTransport
+---------------------------
+Number of rows: 100
+
+Columns and Data Types:
+- TransportID: int64
+- RouteNumber: object
+- BusNumber: object
+- PassengerCount: int64
+- RecordedAt: datetime64[ns]
+
+
+Sheet Name: TollTransactions
+----------------------------
+Number of rows: 100
+
+Columns and Data Types:
+- TransactionID: int64
+- VehicleID: int64
+- TollBooth: object
+- AmountPaid: int64
+- Timestamp: datetime64[ns]
+
+
+Sheet Name: CongestionLevels
+----------------------------
+Number of rows: 100
+
+Columns and Data Types:
+- CongestionID: int64
+- Location: object
+- Level: object
+- RecordedAt: datetime64[ns]
+
+
+Sheet Name: RoadClosures
+------------------------
+Number of rows: 50
+
+Columns and Data Types:
+- ClosureID: int64
+- Location: object
+- Reason: object
+- ClosedAt: datetime64[ns]
+
+
+Sheet Name: EmergencyVehicles
+-----------------------------
+Number of rows: 50
+
+Columns and Data Types:
+- EmergencyID: int64
+- VehicleType: object
+- RespondingTo: object
+- Timestamp: datetime64[ns]
+
+
+Sheet Name: WeatherData
+-----------------------
+Number of rows: 100
+
+Columns and Data Types:
+- WeatherID: int64
+- Temperature_C: float64
+- Humidity_Percent: int64
+- Condition: object
+- Timestamp: datetime64[ns]
+
+
+Sheet Name: PedestrianFlow
+--------------------------
+Number of rows: 100
+
+Columns and Data Types:
+- FlowID: int64
+- Location: object
+- PedestrianCount: int64
+- RecordedAt: datetime64[ns]
+
+
+Sheet Name: TrafficIncidents
+----------------------------
+Number of rows: 100
+
+Columns and Data Types:
+- IncidentID: int64
+- Type: object
+- Location: object
+- ReportedAt: datetime64[ns]
+
