@@ -20,29 +20,29 @@ This project implements a data warehouse for urban traffic flow analysis with a 
 This data warehouse follows a star schema design with:
 
 ### Fact Tables
-- **Traffic Measurements**: Vehicle counts, speeds, occupancy rates, and other metrics
+- **Traffic Events**: Vehicle counts, speeds, accident reports, congestion levels, and other metrics
 
 ### Dimension Tables
-- **Location**: Intersections, road types, coordinates
-- **Time**: Date/time hierarchy with holiday flags
-- **Weather**: Conditions, temperature, precipitation
-- **Event**: Scheduled events impacting traffic
+- **Location**: Traffic measurement locations
+- **Date**: Calendar attributes including weekends and holidays
+- **Time**: Hour and minute with day segments and peak hour flags
 - **Vehicle**: Vehicle types and classifications
-- **Infrastructure**: Traffic signals, road conditions
+- **Event Type**: Types of traffic events with severity scales
+- **Environmental**: Weather conditions and temperature
 
 ## Setup Instructions
 
 ### Prerequisites
-- Python 3.9+
-- PostgreSQL 13+
-- Docker and Docker Compose (optional)
+- Python 3.12+
+- PostgreSQL 13
+- Docker and Docker Compose (for containerized deployment)
 
 ### Local Development Setup
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/traffic-congestion-dwh.git
-cd traffic-congestion-dwh
+git clone https://github.com/yourusername/traffic-flow-dwh.git
+cd traffic-flow-dwh
 ```
 
 2. Create a virtual environment:
@@ -57,7 +57,8 @@ pip install -r requirements.txt
 ```
 
 4. Configure the application:
-   - Update `src/config/config.py` with your database and data source settings
+   - Copy the `.env.example` to `.env` (if available) or create a new `.env` file
+   - Update environment variables in the `.env` file with your database and data source settings
 
 5. Run the ETL pipeline:
 ```bash
@@ -66,15 +67,23 @@ python src/main.py
 
 ### Docker Setup
 
-1. Build and start the containers:
+1. Ensure your `.env` file is configured properly
+   - The `.env` file contains database credentials and configuration settings
+
+2. Build and start the containers:
 ```bash
 docker-compose up -d
 ```
 
-2. Check the logs:
+3. Check the logs:
 ```bash
-docker-compose logs -f
+docker-compose logs -f etl_service
 ```
+
+4. Access PgAdmin:
+   - Navigate to http://localhost:5050
+   - Login with credentials from docker-compose.yml (default: admin@admin.com / admin)
+   - Connect to the database using the warehouse_db service name
 
 ## Using the Data Warehouse
 
@@ -87,23 +96,31 @@ The ETL pipeline can be run in several ways:
 python src/main.py
 ```
 
-2. **Specify an Excel data source**:
+2. **Specify an Excel data source** (using environment variable):
 ```bash
-EXCEL_FILE_PATH=data/traffic_flow_data.xlsx python src/main.py
+SOURCE_FILE=data/traffic_flow_data.xlsx python src/main.py
 ```
 
 ### Exploratory Data Analysis
 
-The project includes a Jupyter notebook for exploratory data analysis:
+The project includes Jupyter notebooks for exploratory data analysis:
 
-1. Start Jupyter:
+1. Start the Jupyter container (if using Docker):
+```bash
+docker-compose up -d jupyter
+```
+   Or start Jupyter locally:
 ```bash
 jupyter notebook
 ```
 
-2. Open `eda/traffic_analysis.ipynb`
+2. Access Jupyter Lab:
+   - Navigate to http://localhost:8888 (no token required if using Docker setup)
+   - Open `notebooks/traffic_flow_analysis.ipynb` or `notebooks/exploratory_data_analysis.ipynb`
 
-### Example Queries
+## Project Structure
+
+## Example Queries
 
 The `queries/` directory contains example SQL queries for common analytical needs:
 
@@ -160,13 +177,13 @@ The CI pipeline performs:
 
 To see the CI pipeline results, check the "Actions" tab in the GitHub repository.
 
-## Design Documentation
+## Documentation
 
 The data warehouse design is documented in the following files:
 
-- `Design/DWH.Design.Template.xlsx` - Dimension and fact table specifications
-- `Design/Traffic.Flow.pdf` - Conceptual design and data flow diagrams
-- `Design/Traffic.xlsx` - Source data specifications
+- `docs/DWH.Design.Template.xlsx` - Dimension and fact table specifications
+- `docs/Traffic.Flow.pdf` - Conceptual design and data flow diagrams
+- `docs/traffic_flow_data_warehouse_design.txt` - Additional design documentation
 
 ## Contributing
 
