@@ -1,0 +1,236 @@
+# TRAFFIC FLOW DATA WAREHOUSE DESIGN - FOCUSED APPROACH
+
+## BUSINESS PROBLEM - REFINED
+Urban areas need to manage traffic flow efficiently to reduce congestion and improve safety. With limited resources for data transformation, we'll focus on the most critical aspects:
+- Monitoring and analyzing traffic flow patterns
+- Identifying and responding to congestion issues
+- Tracking accidents and incidents that affect traffic
+- Understanding environmental impacts on traffic conditions
+- Managing traffic control infrastructure
+
+## GRAIN FOR DATA MART
+The grain will be "Traffic events and measurements at a specific location, on a specific date, at a specific time."
+
+## MAJOR KPIs INVOLVED
+1. Traffic Flow Metrics
+   - Average Daily Traffic (ADT) by location category
+   - Traffic Volume by Hour of Day (Hourly Distribution Pattern)
+   - Day of Week Traffic Variation Index (weekday vs weekend patterns)
+
+2. Congestion Metrics
+   - Peak Hour Congestion Index by location category
+   - Average Congestion Duration
+   - Congestion Predictability Score (measure of how consistently congestion occurs)
+
+3. Safety Metrics
+   - Accident Rate per hour of day
+   - Accident Severity Distribution
+   - Vehicle Involvement Factor (average vehicles per accident)
+   - Weather-Related Accident Percentage
+
+4. Environmental Impact Metrics
+   - Weather Condition Impact Factor on traffic flow
+   - Road Condition Impact Factor on average speed
+   - Seasonal Traffic Volume Variance
+
+5. Enforcement Metrics
+   - Speed Violation Frequency by vehicle type
+   - Average Speed Excess
+   - Violation Hotspot Index by location
+
+## SELECTED OLTP TABLES (8 TOTAL)
+1. TrafficFlow - PRIMARY - Essential for flow analysis
+2. Accidents - PRIMARY - Critical for safety analysis
+3. CongestionLevels - PRIMARY - Key for bottleneck identification
+4. Vehicles - PRIMARY - Basic vehicle information
+5. RoadConditions - PRIMARY - Road surface impacts
+6. WeatherData - SECONDARY - Environmental context
+7. SpeedViolations - SECONDARY - Safety enforcement
+8. RoadClosures - SECONDARY - Major disruptions
+
+## SINGLE FACT TABLE DESIGN
+
+### FACT_TrafficEvents
+- EventID (surrogate key)
+- DateKey (FK to DIM_Date)
+- TimeKey (FK to DIM_Time)
+- LocationKey (FK to DIM_Location)
+- VehicleKey (FK to DIM_Vehicle, when applicable)
+- EventTypeKey (FK to DIM_EventType)
+- EnvironmentalKey (FK to DIM_Environmental)
+- VehicleCount (Fully Additive)
+- AvgSpeed (Non-Additive)
+- VehiclesInvolved (Fully Additive)
+- IncidentSeverityScore (Non-Additive)
+- SpeedExcess (Fully Additive)
+- DurationMinutes (Semi-Additive)
+- CongestionLevelScore (Non-Additive)
+
+## DIMENSIONS
+
+DIM_Location:
+- LocationKey (surrogate key)
+- LocationSource (source table)
+- LocationName
+
+DIM_Date:
+- DateKey
+- Date
+- Day
+- DayOfWeek
+- Month
+- Quarter
+- Year
+- IsWeekend
+- IsHoliday
+- Season
+
+DIM_Time:
+- TimeKey
+- TimeOfDay
+- Hour
+- Minute
+- PeakHourFlag
+- DaySegment (Morning, Afternoon, Evening, Night)
+
+DIM_Vehicle:
+- VehicleKey (surrogate key)
+- VehicleID (natural key)
+- VehicleType
+- VehicleCategory
+
+DIM_EventType:
+- EventTypeKey
+- EventTypeID
+- EventCategory (Flow, Accident, Violation, Congestion, Closure)
+- EventDescription
+- SeverityScale
+
+DIM_Environmental:
+- EnvironmentalKey (surrogate key)
+- Temperature_C
+- WeatherCondition
+- RoadSurface
+- Visibility
+- VisibilityCategory
+
+## DIMENSION MANAGEMENT APPROACH
+
+### DIM_Location
+- **Primary Source**: Multiple source tables (no overlap exists)
+- **Snapshot Strategy**: Type 1 SCD since location is primarily a name/identifier
+- **Coverage**: All unique locations from each source table
+- **Note**: EDA revealed zero overlap between location values across different source tables. This means locations cannot be correlated across different event types without additional geocoding.
+
+### DIM_Date
+- **Type**: Standard date dimension (not derived from source systems)
+- **Coverage**: Pre-populated for 5 years (3 years historical, current year, 1 year future)
+- **Granularity**: Day level
+- **Special Attributes**: Holidays, school days, special events that impact traffic
+- **Updates**: Yearly to extend the future date range
+
+### DIM_Time
+- **Type**: Standard time dimension (not derived from source systems)
+- **Coverage**: 24-hour clock with 1-minute intervals
+- **Special Attributes**: Rush hour flags, day segments, typical traffic pattern periods
+- **Updates**: Static, rarely changes
+
+### DIM_Vehicle, DIM_EventType, DIM_Environmental
+- **Update Frequency**: Weekly for Environmental, Monthly for the others
+- **Historical Tracking**: Type 2 SCD for Environmental conditions, Type 1 for others
+
+## OLTP TO DATA WAREHOUSE MAPPING - FOCUSED
+
+OLTP Table | DWH Table Type | DWH Table Name | OLTP Attributes | DWH Attributes | Additivity | Comments
+-----------|----------------|----------------|----------------|----------------|------------|----------
+TrafficFlow | Fact | FACT_TrafficEvents | FlowID, Location, VehicleCount, Timestamp | DateKey, TimeKey, EventTypeKey, LocationKey, LocationName, LocationSource="TrafficFlow", VehicleCount | Fully Additive | Core traffic volume measurement
+Accidents | Fact | FACT_TrafficEvents | AccidentID, Location, Severity, VehiclesInvolved, ReportedAt | DateKey, TimeKey, EventTypeKey, LocationKey, LocationName, LocationSource="Accidents", VehiclesInvolved, IncidentSeverityScore | Mixed | Critical safety information
+CongestionLevels | Fact | FACT_TrafficEvents | CongestionID, Location, Level, RecordedAt | DateKey, TimeKey, EventTypeKey, LocationKey, LocationName, LocationSource="CongestionLevels", CongestionLevelScore | Non-Additive | Key congestion data
+Vehicles | Dimension | DIM_Vehicle | VehicleID, VehicleType | VehicleKey, VehicleID, VehicleType, VehicleCategory | N/A | Basic vehicle information
+RoadConditions | Dimension | DIM_Environmental | ConditionID, Surface, Visibility, RecordedAt | EnvironmentalKey, RoadSurface, Visibility | N/A | Road condition factors
+WeatherData | Dimension | DIM_Environmental | WeatherID, Temperature_C, Condition | EnvironmentalKey, Temperature_C, WeatherCondition | N/A | Weather factors
+SpeedViolations | Fact | FACT_TrafficEvents | ViolationID, VehicleID, SpeedRecorded, SpeedLimit | VehicleKey, DateKey, TimeKey, EventTypeKey, LocationKey, LocationName, LocationSource="SpeedViolations", AvgSpeed, SpeedExcess | Mixed | Safety enforcement data
+RoadClosures | Fact | FACT_TrafficEvents | ClosureID, Location, Reason, ClosedAt | DateKey, TimeKey, EventTypeKey, LocationKey, LocationName, LocationSource="RoadClosures", DurationMinutes | Semi-Additive | Major disruption events
+
+## DATA RETENTION POLICY
+- Fact data: 3 years of historical data for trend analysis
+- Current year data: Full granularity retention
+- Historical data: Potential aggregation to daily/weekly summaries after 1 year
+- Reference dimensions: Maintain historical values via appropriate SCD types
+
+## POTENTIAL ANALYTICAL REQUIREMENTS OF THE BUSINESS
+
+Based on our EDA findings and the design of our data mart, this solution will help answer the following business questions:
+
+### 1. Temporal Traffic Pattern Analysis
+- **What are the peak traffic hours in different areas of the city?**
+  - Our EDA revealed clear hourly patterns in traffic flow data
+- **How does traffic volume differ between weekdays and weekends?**
+  - Day-of-week patterns were evident in traffic flow
+- **What seasonal patterns exist in traffic volume?**
+  - Can analyze traffic by season and weather condition
+
+### 2. Safety and Accident Analysis
+- **What times of day have the highest accident rates?**
+  - EDA showed variations in accident occurrence by hour of day
+- **Which vehicle types are most frequently involved in accidents?**
+  - Can correlate vehicle dimension with accident records
+- **How do weather conditions affect accident severity?**
+  - EDA suggests correlations between weather and traffic incidents
+
+### 3. Congestion Analysis and Prediction
+- **What areas experience the most severe congestion?**
+  - Congestion level data shows varying degrees of severity across locations
+- **How predictable are congestion patterns?**
+  - Time-based analysis of congestion records reveals regularity patterns
+- **What is the average duration of congestion events?**
+  - Duration metrics in congestion data enables this analysis
+
+### 4. Weather and Environmental Impact Assessment
+- **How does rainfall affect traffic volume?**
+  - EDA showed correlations between weather conditions and traffic flow
+- **What road conditions are associated with higher accident rates?**
+  - Analysis of road surface conditions and accident records
+- **How much does severe weather reduce average traffic speed?**
+  - Speed metrics can be analyzed against weather dimension
+
+### 5. Enforcement and Compliance Analysis
+- **Which vehicle types have the highest rate of speed violations?**
+  - EDA revealed variation in violation rates across vehicle types
+- **What times of day have the highest number of speed violations?**
+  - Hourly patterns in violation data can be analyzed
+- **Is there a correlation between enforcement activity and accident rates?**
+  - Temporal correlation between violations and accidents can be studied
+
+### 6. Infrastructure Utilization Analysis
+- **How do road closures affect congestion in surrounding areas?**
+  - Limited by location overlap issues, but time-based correlations possible
+- **What time periods show the most efficient use of road infrastructure?**
+  - Traffic volume to congestion ratio analysis
+- **How quickly does traffic return to normal after road closures end?**
+  - Analysis of traffic patterns following closure events
+
+### 7. Vehicle Type Analysis
+- **What is the composition of vehicle types in traffic flow?**
+  - Vehicle dimension enables traffic composition analysis
+- **Do certain vehicle types contribute disproportionately to congestion?**
+  - Correlation between vehicle types and congestion levels
+- **How does vehicle type distribution vary by time of day?**
+  - Temporal patterns in vehicle presence
+
+### 8. Incident Response Analysis
+- **What factors correlate with longer road closure durations?**
+  - Analysis of closure reason and duration
+- **How do accidents affect surrounding traffic flow?**
+  - Time-based correlation possible, though limited by location overlap issues
+- **What types of incidents cause the most significant traffic disruptions?**
+  - Severity analysis across incident types
+
+## NOTES ON LOCATION HANDLING
+
+The exploratory data analysis revealed a critical insight: there is **zero overlap (0.0%)** between location values across different source tables. This means:
+
+1. **No unified location dimension is possible** without additional data enrichment
+2. **Cross-domain location analysis** (e.g., accident rates at congested intersections) will not be possible with current data
+
+These analytical capabilities directly support urban traffic planning, public safety enhancement, and infrastructure optimization goals, though with the noted limitations in location correlation. 

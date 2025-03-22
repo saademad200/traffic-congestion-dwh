@@ -1,0 +1,85 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+*.env
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Byte-compiled / cache / temp files
+*.bak
+*.swp
+*.tmp
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Sphinx documentation
+docs/_build/
+
+# Pyre type checker
+.pyre/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+
+# Pylint
+.pylint.d/
+
+# Bandit security scanner
+bandit.json
+
+# Pre-commit hooks cache
+.pre-commit-config.yaml
+.pre-commit-cache/
+
+# Docker
+docker-compose.override.yml
+*.tar
+*.img
+*.pid
+*.pid.lock
+
+
+# Local config
+local_settings.py
+config/local.py
+.DS_Store
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.code-workspace
+
+# Logs
+logs/
+*.log
+
+# CI/CD specific
+*.lock
+.envrc
