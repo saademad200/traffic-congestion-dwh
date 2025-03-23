@@ -19,7 +19,10 @@ class LocationDimensionTransformer(BaseTransformer):
         
         # Collect all locations with their source
         locations = []
-        
+        locations.append({
+            'location_name': 'Unknown',
+            'location_source': 'Unknown'
+        })
         for table_name in location_tables:
             if table_name in data:
                 df = data[table_name]
@@ -43,6 +46,9 @@ class LocationDimensionTransformer(BaseTransformer):
         else:
             # Create empty dataframe with correct columns
             location_df = pd.DataFrame(columns=['location_key', 'location_name', 'location_source'])
+        
+        # Ensure the unknown record has a key of 0
+        location_df.loc[0, 'location_key'] = 0
         
         logger.info(f"Created Location dimension with {len(location_df)} records")
         return location_df 

@@ -15,6 +15,12 @@ class EventTypeDimensionTransformer(BaseTransformer):
         """
         event_types = [
             {
+                'event_type_id': 'UNKNOWN',
+                'event_category': 'Unknown',
+                'event_description': 'Unknown or unclassified event',
+                'severity_scale': 0
+            },
+            {
                 'event_type_id': 'FLOW',
                 'event_category': 'Flow',
                 'event_description': 'Regular traffic flow measurement',
@@ -82,7 +88,7 @@ class EventTypeDimensionTransformer(BaseTransformer):
         # Add surrogate key
         event_type_df.reset_index(inplace=True)
         event_type_df.rename(columns={'index': 'event_type_key'}, inplace=True)
-        event_type_df['event_type_key'] += 1  # Start keys at 1
-        
+        event_type_df['event_type_key'] = event_type_df.index  # Set key for UNKNOWN to 0
+        event_type_df.loc[0, 'event_type_key'] = 0  # Ensure the unknown record retains its key
         logger.info(f"Created EventType dimension with {len(event_type_df)} records")
         return event_type_df 

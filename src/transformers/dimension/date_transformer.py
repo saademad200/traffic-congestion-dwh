@@ -21,6 +21,20 @@ class DateDimensionTransformer(BaseTransformer):
         
         # Generate all dates
         dates = []
+        # Add unknown record with primary key of 0
+        dates.append({
+            'date': None,
+            'day': None,
+            'day_of_week': None,
+            'month': None,
+            'quarter': None,
+            'year': None,
+            'is_weekend': None,
+            'is_holiday': None,
+            'season': None,
+            'date_key': 0  # Set primary key for unknown record
+        })
+        
         current_date = start_date
         
         while current_date <= end_date:
@@ -50,18 +64,14 @@ class DateDimensionTransformer(BaseTransformer):
                 'year': current_date.year,
                 'is_weekend': is_weekend,
                 'is_holiday': is_holiday,
-                'season': season
+                'season': season,
+                'date_key': int(current_date.strftime('%Y%m%d'))  # Set primary key for each date record
             })
             
             current_date += timedelta(days=1)
         
         # Create dataframe
         date_df = pd.DataFrame(dates)
-        
-        # Add surrogate key (YYYYMMDD format)
-        date_df['date_key'] = date_df['date'].apply(
-            lambda x: int(x.strftime('%Y%m%d'))
-        )
         
         logger.info(f"Created Date dimension with {len(date_df)} records")
         return date_df 

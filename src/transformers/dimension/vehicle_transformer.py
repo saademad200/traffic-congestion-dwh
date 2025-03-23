@@ -48,5 +48,13 @@ class VehicleDimensionTransformer(BaseTransformer):
         # Select only needed columns
         result_df = vehicles_df[['vehicle_key', 'vehicle_id', 'vehicle_type', 'vehicle_category']]
         
+        # Add unknown vehicle with key 0
+        unknown_vehicle = {
+            'vehicle_key': 0,
+            'vehicle_id': 'Unknown',
+            'vehicle_type': 'Unknown',
+            'vehicle_category': 'Unknown'
+        }
+        result_df = pd.concat([pd.DataFrame([unknown_vehicle]), result_df], ignore_index=True)
         logger.info(f"Created Vehicle dimension with {len(result_df)} records")
         return result_df 

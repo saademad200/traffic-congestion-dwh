@@ -15,6 +15,13 @@ class EnvironmentalDimensionTransformer(BaseTransformer):
         """
         env_records = []
         
+        # Primary key of unknown should be 0
+        env_records.append({
+            'date': None,
+            'temperature_c': None,
+            'weather_condition': "Unknown"
+        })
+        
         # Process Weather Data
         if 'WeatherData' in data:
             weather_df = data['WeatherData'].copy()
@@ -39,11 +46,12 @@ class EnvironmentalDimensionTransformer(BaseTransformer):
         # Create dataframe from all records
         env_df = pd.DataFrame(env_records)
         
-        # Add surrogate key
+        # Ensure the unknown record is not overwritten
         if not env_df.empty:
             env_df.reset_index(inplace=True)
             env_df.rename(columns={'index': 'environmental_key'}, inplace=True)
-            env_df['environmental_key'] += 1  # Start keys at 1
+            env_df['environmental_key'] += 1  # Start keys at 1, but keep the first record as 0
+            env_df.loc[0, 'environmental_key'] = 0  # Ensure the unknown record retains its key
         else:
             # Create empty dataframe with correct columns if no data
             env_df = pd.DataFrame(columns=['environmental_key', 'date', 'temperature_c', 'weather_condition'])

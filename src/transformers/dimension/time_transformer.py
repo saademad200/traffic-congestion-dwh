@@ -15,7 +15,15 @@ class TimeDimensionTransformer(BaseTransformer):
         Independent of source data
         """
         times = []
-        
+        # Primary key of unknown should be 0
+        times.append({
+            'time_of_day': None,
+            'hour': None,
+            'minute': None,
+            'peak_hour_flag': None,
+            'day_segment': None,
+            'time_key': 0  # Set primary key for unknown record
+        })
         # Peak hours based on eda
         morning_peak_start = 13
         morning_peak_end = 13
@@ -45,16 +53,12 @@ class TimeDimensionTransformer(BaseTransformer):
                     'hour': hour,
                     'minute': minute,
                     'peak_hour_flag': is_peak,
-                    'day_segment': day_segment
+                    'day_segment': day_segment,
+                    'time_key': hour * 100 + minute  # Set primary key for each time record
                 })
         
         # Create dataframe
         time_df = pd.DataFrame(times)
-        
-        # Add surrogate key (HHMM format)
-        time_df['time_key'] = time_df.apply(
-            lambda row: row['hour'] * 100 + row['minute'], axis=1
-        )
         
         logger.info(f"Created Time dimension with {len(time_df)} records")
         return time_df 
