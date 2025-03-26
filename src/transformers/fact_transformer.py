@@ -87,14 +87,14 @@ class FactTableTransformer(BaseTransformer):
     # Create a mapping dictionary for severity levels
     _CONGESTION_LEVEL_MAP = {
             'Low': 1.0,
-            'Medium': 2.0,
+            'Moderate': 2.0,
             'High': 3.0,
             'Severe': 4.0
         }
     
     def _map_congestion_level(self, level: str) -> float:
         """Map congestion level string to numeric score"""
-        return self._CONGESTION_LEVEL_MAP.get(level, 0.0)
+        return self._CONGESTION_LEVEL_MAP.get(level)
     
     _ACCIDENT_SEVERITY_MAP = {
             'Minor': 1.0,
@@ -105,7 +105,7 @@ class FactTableTransformer(BaseTransformer):
     
     def _map_accident_severity(self, severity: str) -> float:
         """Map accident severity string to numeric score"""
-        return self._ACCIDENT_SEVERITY_MAP.get(severity, 0.0)
+        return self._ACCIDENT_SEVERITY_MAP.get(severity)
     
     def _process_data_source(self, 
                            source_name: str,
