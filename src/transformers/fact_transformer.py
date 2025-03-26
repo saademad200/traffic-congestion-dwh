@@ -202,7 +202,7 @@ class FactTableTransformer(BaseTransformer):
             date_key=self._get_date_key(date_df, row['RecordedAt']),
             time_key=self._get_time_key(time_df, row['RecordedAt']),
             location_key=self._get_location_key(location_df, row['Location'], 'CongestionLevels'),
-            vehicle_key=None,
+            vehicle_key=self.DEFAULT_KEY,
             event_type_key=self._get_event_type_key(
                 event_type_df, f'CONGESTION_{row["Level"].upper()}'
             ),

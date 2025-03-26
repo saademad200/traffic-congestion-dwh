@@ -60,15 +60,15 @@ class DimEnvironmental:
 
 @dataclass
 class FactTrafficEvents:
-    event_id: int  # Surrogate key
+    event_id: int  # Primary key
     date_key: int  # FK to DIM_Date
     time_key: int  # FK to DIM_Time
     location_key: int  # FK to DIM_Location
-    vehicle_key: Optional[int]  # FK to DIM_Vehicle, when applicable
+    vehicle_key: int  # FK to DIM_Vehicle
     event_type_key: int  # FK to DIM_EventType
-    environmental_key: Optional[int]  # FK to DIM_Environmental
+    environmental_key: int  # FK to DIM_Environmental
     # Non-dimensional attributes
-    vehicle_count: Optional[int]  # Fully Additive
+    vehicle_count: int  # Fully Additive
     avg_speed: Optional[float]  # Non-Additive
     vehicles_involved: Optional[int]  # Fully Additive
     incident_severity_score: Optional[float]  # Non-Additive
