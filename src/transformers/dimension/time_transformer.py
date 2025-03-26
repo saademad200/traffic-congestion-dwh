@@ -15,16 +15,8 @@ class TimeDimensionTransformer(BaseTransformer):
         Independent of source data
         """
         times = []
-        # Primary key of unknown should be 0
-        times.append({
-            'time_of_day': None,
-            'hour': None,
-            'minute': None,
-            'peak_hour_flag': None,
-            'day_segment': None,
-            'time_key': 0  # Set primary key for unknown record
-        })
-        # Peak hours based on eda
+        
+        # Peak hours based on EDA
         morning_peak_start = 13
         morning_peak_end = 13
         evening_peak_start = 18

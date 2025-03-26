@@ -15,12 +15,6 @@ class EventTypeDimensionTransformer(BaseTransformer):
         """
         event_types = [
             {
-                'event_type_id': 'UNKNOWN',
-                'event_category': 'Unknown',
-                'event_description': 'Unknown or unclassified event',
-                'severity_scale': 0
-            },
-            {
                 'event_type_id': 'FLOW',
                 'event_category': 'Flow',
                 'event_description': 'Regular traffic flow measurement',

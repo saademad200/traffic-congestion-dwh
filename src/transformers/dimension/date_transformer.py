@@ -21,19 +21,6 @@ class DateDimensionTransformer(BaseTransformer):
         
         # Generate all dates
         dates = []
-        # Add unknown record with primary key of 0
-        dates.append({
-            'date': None,
-            'day': None,
-            'day_of_week': None,
-            'month': None,
-            'quarter': None,
-            'year': None,
-            'is_weekend': None,
-            'is_holiday': None,
-            'season': None,
-            'date_key': 0  # Set primary key for unknown record
-        })
         
         current_date = start_date
         
