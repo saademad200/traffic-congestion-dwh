@@ -5,7 +5,7 @@ psycopg2==2.9.10
 
 # Data processing
 pandas==2.1.3
-numpy==1.26.2
+numpy==1.25.0
 pydantic==2.10.6
 
 # HTTP/API (for potential data sources)
