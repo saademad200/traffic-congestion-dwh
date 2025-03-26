@@ -19,10 +19,8 @@ class LocationDimensionTransformer(BaseTransformer):
         
         # Collect all locations with their source
         locations = []
-        locations.append({
-            'location_name': 'Unknown',
-            'location_source': 'Unknown'
-        })
+        
+        # First collect all locations from source tables
         for table_name in location_tables:
             if table_name in data:
                 df = data[table_name]
@@ -30,25 +28,32 @@ class LocationDimensionTransformer(BaseTransformer):
                     # Extract unique locations from this table
                     unique_locs = df['Location'].unique()
                     for loc in unique_locs:
-                        locations.append({
-                            'location_name': loc,
-                            'location_source': table_name
-                        })
+                        if pd.notna(loc) and loc != 'Unknown':  # Skip nulls and 'Unknown'
+                            locations.append({
+                                'location_name': loc,
+                                'location_source': table_name
+                            })
         
         # Create dataframe
         location_df = pd.DataFrame(locations)
         
-        # Add surrogate key
+        # Add surrogate key - start from 1 for all regular locations
         if not location_df.empty:
-            location_df.reset_index(inplace=True)
-            location_df.rename(columns={'index': 'location_key'}, inplace=True)
-            location_df['location_key'] += 1  # Start keys at 1
+            # Create a new clean sequence of IDs starting from 1
+            location_df['location_key'] = range(1, len(location_df) + 1)
         else:
             # Create empty dataframe with correct columns
             location_df = pd.DataFrame(columns=['location_key', 'location_name', 'location_source'])
         
-        # Ensure the unknown record has a key of 0
-        location_df.loc[0, 'location_key'] = 0
+        # Add the unknown record with key 0 at the beginning
+        unknown_record = pd.DataFrame([{
+            'location_key': 0,
+            'location_name': 'Unknown',
+            'location_source': 'Unknown'
+        }])
+        
+        # Concatenate the unknown record at the beginning
+        location_df = pd.concat([unknown_record, location_df], ignore_index=True)
         
         logger.info(f"Created Location dimension with {len(location_df)} records")
         return location_df 
