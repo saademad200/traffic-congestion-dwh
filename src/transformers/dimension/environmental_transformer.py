@@ -19,6 +19,7 @@ class EnvironmentalDimensionTransformer(BaseTransformer):
         env_records.append({
             'date': None,
             'temperature_c': None,
+            'humidity': None,
             'weather_condition': "Unknown"
         })
         
@@ -32,7 +33,8 @@ class EnvironmentalDimensionTransformer(BaseTransformer):
             # Group and get typical conditions for each day
             daily_weather = weather_df.groupby('date').agg({
                 'Temperature_C': 'mean',
-                'Condition': lambda x: x.value_counts().index[0]  # most common condition
+                'Condition': lambda x: x.value_counts().index[0],  # most common condition
+                'Humidity_Percent': 'mean'
             }).reset_index()
             
             for _, row in daily_weather.iterrows():
@@ -40,7 +42,8 @@ class EnvironmentalDimensionTransformer(BaseTransformer):
                 env_records.append({
                     'date': row['date'],
                     'temperature_c': row['Temperature_C'],
-                    'weather_condition': row['Condition']
+                    'weather_condition': row['Condition'],
+                    'humidity': row['Humidity_Percent']
                 })
         
         # Create dataframe from all records

@@ -6,7 +6,7 @@ CREATE TABLE "DimLocation" (
 );
 
 CREATE TABLE "DimDate" (
-    date_key INTEGER PRIMARY KEY, -- YYYYMMDD format
+    date_key INTEGER PRIMARY KEY,
     date DATE NOT NULL,
     day INTEGER NOT NULL,
     day_of_week INTEGER NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE "DimDate" (
 );
 
 CREATE TABLE "DimTime" (
-    time_key INTEGER PRIMARY KEY, -- HHMM format
+    time_key INTEGER PRIMARY KEY,
     time_of_day TIME NOT NULL,
     hour INTEGER NOT NULL,
     minute INTEGER NOT NULL,
@@ -44,8 +44,8 @@ CREATE TABLE "DimEventType" (
 
 CREATE TABLE "DimEnvironmental" (
     environmental_key SERIAL PRIMARY KEY,
-    date DATE NOT NULL,
     temperature_c DECIMAL(5,2),
+    humidity DECIMAL(5,2),
     weather_condition VARCHAR(50)
 );
 

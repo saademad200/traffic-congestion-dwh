@@ -84,7 +84,7 @@ class DateDimensionTransformer(BaseTransformer):
         
         3. Create DataFrame from dates list
         
-        4. Add surrogate key in YYYYMMDD format
+        4. Add dimension primary key in YYYYMMDD format
            a. Apply date formatting function to create integer key
         
         5. Return date dimension DataFrame
@@ -140,7 +140,7 @@ class TimeDimensionTransformer(BaseTransformer):
         
         3. Create DataFrame from times list
         
-        4. Add surrogate key in HHMM format
+        4. Add dimension primary key in HHMM format
            a. time_key = hour * 100 + minute
         
         5. Return time dimension DataFrame
@@ -192,12 +192,10 @@ class LocationDimensionTransformer(BaseTransformer):
         
         3. Create DataFrame from locations list
         
-        4. Add surrogate key
+        4. Add dimension primary key
            a. If locations exist:
               i. Add sequential location_key starting from 1
-           b. If no locations:
-              i. Create empty DataFrame with correct columns
-        
+
         5. Return location dimension DataFrame
         
         PARAMETERS:
@@ -252,9 +250,10 @@ class VehicleDimensionTransformer(BaseTransformer):
            a. 'VehicleID' -> 'vehicle_id'
            b. 'VehicleType' -> 'vehicle_type'
         
-        5. Add surrogate key
+        5. Add dimension primary key
            a. Add sequential vehicle_key starting from 1
-        
+           b. vehicle_key 0 represents missing vehicle
+
         6. Select needed columns
            a. 'vehicle_key', 'vehicle_id', 'vehicle_type', 'vehicle_category'
         
@@ -301,16 +300,16 @@ class EnvironmentalDimensionTransformer(BaseTransformer):
               iii. Group by date to reduce cardinality
               iv. Aggregate to get daily averages and most common conditions
               v. For each day:
-                 - Create record with date, temperature, weather condition
+                 - Create record with date, temperature, humidity, weather condition
                  - Add record to env_records list
         
         3. Create DataFrame from env_records list
         
-        4. Add surrogate key
+        4. Add dimension primary key
            a. If records exist:
               i. Add sequential environmental_key starting from 1
            b. If no records:
-              i. Create empty DataFrame with correct columns
+              i. Environmental key 0 represents missing data
         
         5. Return environmental dimension DataFrame
         
@@ -358,7 +357,7 @@ class EventTypeDimensionTransformer(BaseTransformer):
         
         2. Create DataFrame from event_types list
         
-        3. Add surrogate key
+        3. Add dimension primary key
            a. Add sequential event_type_key starting from 1
         
         4. Return event type dimension DataFrame

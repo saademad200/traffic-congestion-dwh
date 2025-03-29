@@ -64,7 +64,6 @@ def main():
             'DimEventType': EventTypeDimensionTransformer(config).transform(),
             'DimEnvironmental': EnvironmentalDimensionTransformer(config).transform(source_data)
         }
-        
         # 3. TRANSFORM FACT TABLE
         logger.info("Starting fact table transformation")
         fact_transformer = FactTableTransformer(config)
@@ -73,6 +72,10 @@ def main():
         # 4. LOAD DATA WAREHOUSE
         logger.info("Starting data warehouse loading")
         loader = WarehouseLoader(config)
+        
+        # Remove date column from environmental dimension (It was there for mapping purposes)
+        if 'DimEnvironmental' in dimensions:
+            dimensions['DimEnvironmental'] = dimensions['DimEnvironmental'].drop('date', axis=1)
         
         # Load dimensions first (in correct order for foreign keys)
         for dim_name, dim_df in dimensions.items():
@@ -85,7 +88,6 @@ def main():
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
         logger.info(f"ETL process completed successfully in {duration:.2f} seconds")
-        
     except Exception as e:
         logger.error(f"ETL process failed: {str(e)}", exc_info=True)
         raise
